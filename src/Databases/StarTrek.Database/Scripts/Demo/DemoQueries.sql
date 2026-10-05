@@ -313,3 +313,27 @@ INNER JOIN dbo.Vessel  AS v  ON v.VesselId = l.VesselId
 GROUP BY ROLLUP (v.Name, lt.Category)
 ORDER BY GROUPING(v.Name), Vessel, GROUPING(lt.Category), Category;
 GO
+
+GO
+
+-------------------------------------------------------------------------------
+-- 20. Same ship, different series: Enterprise NCC-1701 logs split by series
+--     (Spock writes logs in both TOS and SNW; Log.SeriesId tells them apart)
+-------------------------------------------------------------------------------
+SELECT Series, Stardate, LogType, Author, Title
+FROM dbo.PublicLog
+WHERE Registry = 'NCC-1701'
+ORDER BY Series DESC, Stardate;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 21. Logs and tags for one series only
+-------------------------------------------------------------------------------
+SELECT sr.Abbreviation AS Series, t.Tag, COUNT(*) AS LogCount
+FROM dbo.LogTag AS t
+INNER JOIN dbo.[Log]  AS l  ON l.LogId = t.LogId
+INNER JOIN dbo.Series AS sr ON sr.SeriesId = l.SeriesId
+GROUP BY sr.Abbreviation, t.Tag
+ORDER BY sr.Abbreviation, LogCount DESC, t.Tag;
+GO

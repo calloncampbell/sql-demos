@@ -61,6 +61,7 @@ erDiagram
     Rank |o--o{ CharacterAssignment : "held"
     LogType ||--o{ Log : classifies
     Vessel ||--o{ Log : "written aboard"
+    Series ||--o{ Log : "set in"
     Character ||--o{ Log : authors
     Log ||--o{ LogReference : "refers to"
     Log ||--o{ LogTag : "tagged with"
@@ -151,6 +152,7 @@ erDiagram
         int LogId PK
         int LogTypeId FK
         int VesselId FK
+        int SeriesId FK
         int AuthorCharacterId FK
         decimal Stardate
         datetime2 LoggedAt
@@ -190,7 +192,7 @@ erDiagram
 - **`CharacterSpecies`** supports hybrids such as Spock, Troi and B'Elanna. A filtered unique index (`UX_CharacterSpecies_OnePrimary`) enforces one primary species per character.
 - **`CharacterAssignment`** records who served on which ship or station, in which series, in what position and at what rank.
 - **`Vessel.VesselKey`** is a persisted computed column (`ISNULL(Registry, Name)`). It gives every vessel a unique natural key, including those without a registry, such as Deep Space 9.
-- **Crew logs** (LogType, Log, LogReference, LogTag) reuse Vessel and Character, so a log is written by a character aboard a vessel at a stardate.
+- **Crew logs** (LogType, Log, LogReference, LogTag) reuse Vessel and Character, so a log is written by a character aboard a vessel at a stardate. Log.SeriesId records which series the entry belongs to, because ships and characters span series (the Enterprise NCC-1701 and Spock appear in both TOS and SNW). Tags and references inherit their series from the log. The seed script checks that the author has a CharacterAssignment on that vessel in that series.
   - LogType has a Category (Personal, Command, Department) and a DefaultClassification. Types: Personal, Captain's, Chief Engineer's, Medical / Chief Medical Officer's, Science Officer's, Tactical, Security, Counselor's, Operations.
   - Log.Classification is Public, Classified, Confidential or Private (CK_Log_Classification). Personal logs are seeded as Confidential or Private, and the seed script throws if one isn't.
   - LogReference links a log to another log about the same incident. A CHECK blocks self-references, and the composite primary key blocks duplicates. LogTag holds free-form tags, unique per log.

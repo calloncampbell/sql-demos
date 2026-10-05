@@ -8,6 +8,7 @@ RETURN
     SELECT  l.LogId,
             lt.Name      AS LogType,
             lt.Category,
+            sr.Abbreviation AS Series,
             v.Name       AS Vessel,
             l.AuthorCharacterId,
             c.Name       AS Author,
@@ -17,6 +18,7 @@ RETURN
             l.Classification
     FROM dbo.[Log] AS l
     INNER JOIN dbo.LogType     AS lt ON lt.LogTypeId = l.LogTypeId
+    INNER JOIN dbo.Series      AS sr ON sr.SeriesId = l.SeriesId
     INNER JOIN dbo.Vessel      AS v  ON v.VesselId = l.VesselId
     INNER JOIN dbo.[Character] AS c  ON c.CharacterId = l.AuthorCharacterId
     WHERE l.AuthorCharacterId = @ViewerCharacterId
