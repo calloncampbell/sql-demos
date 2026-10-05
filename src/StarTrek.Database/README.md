@@ -19,6 +19,25 @@ The data covers main casts plus key recurring characters (about 150 characters a
 
 **Future phase:** films and the Kelvin timeline.
 
+### Reference data sources
+
+The seed data was hand-compiled rather than imported, so use these to verify or extend it:
+
+- [Memory Alpha](https://memory-alpha.fandom.com/wiki/Portal:Main): the canon Star Trek wiki, covering characters, actors, species, planets, ships and starbases.
+- [StarTrek.com Database](https://www.startrek.com/database): the official franchise reference.
+- [STAPI](https://stapi.co/): a free, open Star Trek REST API, handy for bulk-loading more data.
+- [Wikipedia: List of Star Trek characters](https://en.wikipedia.org/wiki/List_of_Star_Trek_characters).
+- Series cast lists on IMDb and Memory Alpha:
+
+| Series | IMDb | Memory Alpha |
+|---|---|---|
+| TOS | [tt0060028](https://www.imdb.com/title/tt0060028/fullcredits) | [TOS](https://memory-alpha.fandom.com/wiki/Star_Trek:_The_Original_Series) |
+| TNG | [tt0092455](https://www.imdb.com/title/tt0092455/fullcredits) | [TNG](https://memory-alpha.fandom.com/wiki/Star_Trek:_The_Next_Generation) |
+| DS9 | [tt0106145](https://www.imdb.com/title/tt0106145/fullcredits) | [DS9](https://memory-alpha.fandom.com/wiki/Star_Trek:_Deep_Space_Nine) |
+| VOY | [tt0112178](https://www.imdb.com/title/tt0112178/fullcredits) | [VOY](https://memory-alpha.fandom.com/wiki/Star_Trek:_Voyager) |
+| ENT | [tt0244365](https://www.imdb.com/title/tt0244365/fullcredits) | [ENT](https://memory-alpha.fandom.com/wiki/Star_Trek:_Enterprise) |
+| SNW | [tt12327578](https://www.imdb.com/title/tt12327578/fullcredits) | [SNW](https://memory-alpha.fandom.com/wiki/Star_Trek:_Strange_New_Worlds) |
+
 ## Schema
 
 ```mermaid
