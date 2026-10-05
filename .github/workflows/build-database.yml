@@ -1,0 +1,29 @@
+name: Build StarTrek.Database
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/StarTrek.Database/**', '.github/workflows/build-database.yml']
+  pull_request:
+    paths: ['src/StarTrek.Database/**', '.github/workflows/build-database.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build dacpac
+        run: dotnet build src/StarTrek.Database/StarTrek.Database.sqlproj -c Release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StarTrek.Database.dacpac
+          path: src/StarTrek.Database/bin/Release/StarTrek.Database.dacpac
