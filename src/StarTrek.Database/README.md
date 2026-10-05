@@ -170,6 +170,7 @@ erDiagram
 
 ```
 StarTrek.Database.sqlproj
+global.json                           pins the minimum .NET SDK (10.0)
 dbo/Tables/*.sql                      one file per table, with its indexes
 Scripts/PostDeployment/
     Script.PostDeployment.sql         includes the seed files in dependency order
@@ -195,9 +196,8 @@ Re-publishing is safe: changed rows are updated, new rows are inserted, and noth
 
 | Tool | Version | Used for | Install |
 |---|---|---|---|
-| [.NET SDK](https://dotnet.microsoft.com/download) | 8.0 or later | Building the project (`Microsoft.Build.Sql` 2.3.0 SDK, restored from NuGet automatically) | `winget install Microsoft.DotNet.SDK.8` |
+| [.NET SDK](https://dotnet.microsoft.com/download/dotnet/10.0) | 10.0 or later, latest patch recommended (enforced by `global.json`) | Building the project (`Microsoft.Build.Sql` 2.3.0 SDK, restored from NuGet automatically), and running SqlPackage. The SDK includes the runtime. | `winget install Microsoft.DotNet.SDK.10` |
 | [SqlPackage](https://learn.microsoft.com/sql/tools/sqlpackage/sqlpackage-download) | 170.x | Publishing the `.dacpac` | `dotnet tool install -g microsoft.sqlpackage` |
-| [.NET Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) | Whatever your SqlPackage version needs (10.0.11+ for SqlPackage 170.5.x) | Running SqlPackage | `winget install Microsoft.DotNet.Runtime.10` |
 | [SQL Server Express LocalDB](https://learn.microsoft.com/sql/database-engine/configure-windows/sql-server-express-localdb) | 2019 or later | Local target (optional) | Included with Visual Studio, or via the SQL Server Express installer |
 | [sqlcmd](https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-utility) | Any | Running the demo queries from the command line (optional) | `winget install sqlcmd` |
 | [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) | Any | Signing in for Azure SQL (`Active Directory Default`) (optional) | `winget install Microsoft.AzureCLI`, then `az login` |
@@ -213,7 +213,9 @@ sqlpackage /Version
 sqllocaldb info
 ```
 
-> **SqlPackage and the .NET runtime:** recent SqlPackage builds target the newest .NET 10 patch, and won't start on an older one. If `sqlpackage` fails with *"You must install or update .NET to run this application"*, either install the newer runtime shown in the error or pin an older tool, e.g. `dotnet tool update -g microsoft.sqlpackage --version 170.2.70`.
+> **.NET 10 is the minimum.** .NET 8 reaches end of support in November 2026. `global.json` in this folder requires SDK 10.0.100 or later; newer major versions are allowed.
+>
+> **Keep .NET 10 patched.** Recent SqlPackage builds need a recent .NET 10 runtime patch (for example, SqlPackage 170.5.x needs 10.0.11+), and won't start on an older one. If `sqlpackage` fails with *"You must install or update .NET to run this application"*, update .NET 10 (`winget upgrade Microsoft.DotNet.SDK.10`) or pin an older tool, e.g. `dotnet tool update -g microsoft.sqlpackage --version 170.2.70`.
 
 ## Build and publish
 

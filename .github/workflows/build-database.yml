@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: src/StarTrek.Database/global.json
 
       - name: Build dacpac
         run: dotnet build src/StarTrek.Database/StarTrek.Database.sqlproj -c Release
