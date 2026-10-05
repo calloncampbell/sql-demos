@@ -172,9 +172,31 @@ Each seed file:
 
 Re-publishing is safe: changed rows are updated, new rows are inserted, and nothing is deleted.
 
-## Build and publish
+## Requirements
 
-Requires the [.NET SDK](https://dotnet.microsoft.com/download) (8.0 or later).
+| Tool | Version | Used for | Install |
+|---|---|---|---|
+| [.NET SDK](https://dotnet.microsoft.com/download) | 8.0 or later | Building the project (`Microsoft.Build.Sql` 2.3.0 SDK, restored from NuGet automatically) | `winget install Microsoft.DotNet.SDK.8` |
+| [SqlPackage](https://learn.microsoft.com/sql/tools/sqlpackage/sqlpackage-download) | 170.x | Publishing the `.dacpac` | `dotnet tool install -g microsoft.sqlpackage` |
+| [.NET Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) | Whatever your SqlPackage version needs (10.0.11+ for SqlPackage 170.5.x) | Running SqlPackage | `winget install Microsoft.DotNet.Runtime.10` |
+| [SQL Server Express LocalDB](https://learn.microsoft.com/sql/database-engine/configure-windows/sql-server-express-localdb) | 2019 or later | Local target (optional) | Included with Visual Studio, or via the SQL Server Express installer |
+| [sqlcmd](https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-utility) | Any | Running the demo queries from the command line (optional) | `winget install sqlcmd` |
+| [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) | Any | Signing in for Azure SQL (`Active Directory Default`) (optional) | `winget install Microsoft.AzureCLI`, then `az login` |
+
+Optional editors: VS Code with the the **SQL Database Projects** extension, or Visual Studio 2022 17.12+ with SQL Server Data Tools, SDK-style.
+
+Check what's installed:
+
+```powershell
+dotnet --list-sdks
+dotnet --list-runtimes
+sqlpackage /Version
+sqllocaldb info
+```
+
+> **SqlPackage and the .NET runtime:** recent SqlPackage builds target the newest .NET 10 patch, and won't start on an older one. If `sqlpackage` fails with *"You must install or update .NET to run this application"*, either install the newer runtime shown in the error or pin an older tool, e.g. `dotnet tool update -g microsoft.sqlpackage --version 170.2.70`.
+
+## Build and publish
 
 ```powershell
 cd src\StarTrek.Database
