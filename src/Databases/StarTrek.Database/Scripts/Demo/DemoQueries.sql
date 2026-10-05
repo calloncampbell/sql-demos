@@ -290,7 +290,7 @@ ORDER BY r.Depth, l.Stardate;
 GO
 
 -------------------------------------------------------------------------------
--- 18. Logs by tag, and tag usage per log type category
+-- 18. Tag usage: log count and authors per tag
 -------------------------------------------------------------------------------
 SELECT t.Tag, COUNT(*) AS LogCount, STRING_AGG(c.Name, N', ') WITHIN GROUP (ORDER BY c.Name) AS Authors
 FROM dbo.LogTag AS t
