@@ -196,7 +196,7 @@ erDiagram
   - LogType has a Category (Personal, Command, Department) and a DefaultClassification. Types: Personal, Captain's, Chief Engineer's, Medical / Chief Medical Officer's, Science Officer's, Tactical, Security, Counselor's, Operations.
   - Log.Classification is Public, Classified, Confidential or Private (CK_Log_Classification). Personal logs are seeded as Confidential or Private, and the seed script throws if one isn't.
   - LogReference links a log to another log about the same incident. A CHECK blocks self-references, and the composite primary key blocks duplicates. LogTag holds free-form tags, unique per log.
-  - **Privacy:** read logs through dbo.PublicLog, which returns only Public, non-personal logs. dbo.LogsVisibleTo(@ViewerCharacterId) is the my logs pattern: all public logs plus everything the viewer wrote. Querying dbo.[Log] directly bypasses both, so grant access to the view rather than the table. The function trusts the caller-supplied viewer id, so it is a query pattern, not authentication; a real application should derive the viewer from the database principal or use row-level security.
+  - **Privacy:** read logs through dbo.PublicLog, which returns only Public, non-personal logs. dbo.MyLog is the my logs pattern: all public logs plus everything the viewer wrote, where the viewer comes from `SESSION_CONTEXT(N'ViewerCharacterId')` rather than a caller argument. Querying dbo.[Log] directly bypasses both, so grant access to the view rather than the table. A trusted layer must set the context with `@read_only = 1` (the session can't change it afterwards); the database does not authenticate that value, so a real application should also map it from the authenticated principal or use row-level security.
   - **Triggers** (TR_Log_Integrity, TR_LogReference_SameSeries) enforce rules a CHECK can't: personal logs must be Confidential or Private, the author must have a CharacterAssignment on that vessel in that series, and references stay within one series. Cross-ship links within a series are allowed.
   - Stardates and log text are illustrative original paraphrases, not canon-exact.
 - **Schema changes** ship as a declarative model: SqlPackage diffs the .dacpac against the target on publish, so there are no migration scripts. Publishing adds the log tables and seed rows to an existing StarTrek database.
@@ -213,7 +213,7 @@ StarTrek.Database.sqlproj
 global.json                           pins the minimum .NET SDK (10.0)
 dbo/Tables/*.sql                      one file per table, with its indexes
 dbo/Views/PublicLog.sql              non-private logs only
-dbo/Functions/LogsVisibleTo.sql      public logs plus the viewer's own
+dbo/Views/MyLog.sql                 public logs plus the viewer's own (SESSION_CONTEXT)
 Scripts/PostDeployment/
     Script.PostDeployment.sql         includes the seed files in dependency order
     Seed.Lookups.sql                  Series, Affiliation, Rank, VesselClass

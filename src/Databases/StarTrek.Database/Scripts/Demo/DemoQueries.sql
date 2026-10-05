@@ -255,10 +255,12 @@ GO
 -- 16. "My logs": what Janeway can read (all public logs plus every log she wrote,
 --     including her private ones). Swap in another name to see the difference.
 -------------------------------------------------------------------------------
+-- The viewer is taken from SESSION_CONTEXT (set by a trusted layer), not passed by the caller.
 DECLARE @ViewerCharacterId INT = (SELECT CharacterId FROM dbo.[Character] WHERE Name = N'Kathryn Janeway');
+EXEC sys.sp_set_session_context @key = N'ViewerCharacterId', @value = @ViewerCharacterId, @read_only = 1;
 
 SELECT Stardate, LogType, Author, Classification, Title
-FROM dbo.LogsVisibleTo(@ViewerCharacterId)
+FROM dbo.MyLog
 ORDER BY Stardate;
 
 GO
