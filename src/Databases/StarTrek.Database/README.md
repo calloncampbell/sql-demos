@@ -220,7 +220,7 @@ sqllocaldb info
 ## Build and publish
 
 ```powershell
-cd src\StarTrek.Database
+cd src\Databases\StarTrek.Database
 dotnet build
 
 dotnet tool install -g microsoft.sqlpackage
