@@ -40,9 +40,7 @@ CREATE TABLE #LogSource
     Title           NVARCHAR(200)  NOT NULL,
     Content         NVARCHAR(MAX)  NOT NULL,
     Classification  VARCHAR(12)    NOT NULL,
-    PRIMARY KEY (AuthorName, Stardate, Title),
-    -- Tags and references identify a log by author + title, so that pair must be unique in the seed.
-    UNIQUE (AuthorName, Title)
+    PRIMARY KEY (AuthorName, Stardate, Title)
 );
 
 INSERT INTO #LogSource (AuthorName, VesselKey, SeriesAbbr, LogTypeName, Stardate, Title, Content, Classification)
@@ -159,7 +157,7 @@ WHEN NOT MATCHED BY TARGET
 -- Resolve each seed log to its exact row (full natural key, including series and stardate).
 DROP TABLE IF EXISTS #LogKey;
 
-SELECT l.LogId, s.AuthorName, s.Title
+SELECT l.LogId, s.AuthorName, s.Stardate, s.Title
 INTO #LogKey
 FROM #LogSource AS s
 INNER JOIN dbo.[Character] AS c  ON c.Name = s.AuthorName
@@ -172,39 +170,41 @@ DROP TABLE IF EXISTS #LogReferenceSource;
 
 CREATE TABLE #LogReferenceSource
 (
-    AuthorName            NVARCHAR(100) NOT NULL,
-    Title                 NVARCHAR(200) NOT NULL,
-    ReferencedAuthorName  NVARCHAR(100) NOT NULL,
-    ReferencedTitle       NVARCHAR(200) NOT NULL,
-    PRIMARY KEY (AuthorName, Title, ReferencedAuthorName, ReferencedTitle)
+    AuthorName            NVARCHAR(100)  NOT NULL,
+    Stardate              DECIMAL(10, 2) NOT NULL,
+    Title                 NVARCHAR(200)  NOT NULL,
+    ReferencedAuthorName  NVARCHAR(100)  NOT NULL,
+    ReferencedStardate    DECIMAL(10, 2) NOT NULL,
+    ReferencedTitle       NVARCHAR(200)  NOT NULL,
+    PRIMARY KEY (AuthorName, Stardate, Title, ReferencedAuthorName, ReferencedStardate, ReferencedTitle)
 );
 
-INSERT INTO #LogReferenceSource (AuthorName, Title, ReferencedAuthorName, ReferencedTitle)
+INSERT INTO #LogReferenceSource (AuthorName, Stardate, Title, ReferencedAuthorName, ReferencedStardate, ReferencedTitle)
 VALUES
-    (N'Spock',            N'Anomalous readings from the survey',  N'James T. Kirk',   N'Survey of an uncharted system'),
-    (N'Montgomery Scott', N'Warp drive strain after survey',      N'James T. Kirk',   N'Survey of an uncharted system'),
-    (N'Leonard McCoy',    N'Crew fatigue report',                 N'Spock',           N'Anomalous readings from the survey'),
-    (N'Data',             N'Sensor array recalibration',          N'Jean-Luc Picard', N'Diplomatic escort underway'),
-    (N'Deanna Troi',      N'Crew stress after escort mission',    N'Jean-Luc Picard', N'Diplomatic escort underway'),
-    (N'Worf',             N'Boarding drill and access audit',     N'Jean-Luc Picard', N'Diplomatic escort underway'),
-    (N'B''Elanna Torres', N'Power conservation measures',         N'Kathryn Janeway', N'Course through uncharted space'),
-    (N'The Doctor',       N'Emergency holographic program notes', N'Kathryn Janeway', N'Course through uncharted space'),
-    (N'Tuvok',            N'Defensive posture review',            N'Kathryn Janeway', N'Course through uncharted space'),
-    (N'Harry Kim',        N'Long-range sensor scheduling',        N'B''Elanna Torres', N'Power conservation measures');
+    (N'Spock', 2713.6, N'Anomalous readings from the survey', N'James T. Kirk', 2713.5, N'Survey of an uncharted system'),
+    (N'Montgomery Scott', 2713.7, N'Warp drive strain after survey', N'James T. Kirk', 2713.5, N'Survey of an uncharted system'),
+    (N'Leonard McCoy', 2713.8, N'Crew fatigue report', N'Spock', 2713.6, N'Anomalous readings from the survey'),
+    (N'Data', 41154.1, N'Sensor array recalibration', N'Jean-Luc Picard', 41153.7, N'Diplomatic escort underway'),
+    (N'Deanna Troi', 41154.5, N'Crew stress after escort mission', N'Jean-Luc Picard', 41153.7, N'Diplomatic escort underway'),
+    (N'Worf', 41155.0, N'Boarding drill and access audit', N'Jean-Luc Picard', 41153.7, N'Diplomatic escort underway'),
+    (N'B''Elanna Torres', 48316.0, N'Power conservation measures', N'Kathryn Janeway', 48315.6, N'Course through uncharted space'),
+    (N'The Doctor', 48316.4, N'Emergency holographic program notes', N'Kathryn Janeway', 48315.6, N'Course through uncharted space'),
+    (N'Tuvok', 48317.0, N'Defensive posture review', N'Kathryn Janeway', 48315.6, N'Course through uncharted space'),
+    (N'Harry Kim', 48317.5, N'Long-range sensor scheduling', N'B''Elanna Torres', 48316.0, N'Power conservation measures');
 
 IF EXISTS (
     SELECT 1
     FROM #LogReferenceSource AS r
-    WHERE NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = r.AuthorName AND k.Title = r.Title)
-       OR NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = r.ReferencedAuthorName AND k.Title = r.ReferencedTitle))
+    WHERE NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = r.AuthorName AND k.Stardate = r.Stardate AND k.Title = r.Title)
+       OR NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = r.ReferencedAuthorName AND k.Stardate = r.ReferencedStardate AND k.Title = r.ReferencedTitle))
     THROW 50044, N'Seed.Logs: unknown log referenced in LogReference.', 1;
 
 MERGE dbo.LogReference AS tgt
 USING (
     SELECT k.LogId, rk.LogId AS ReferencedLogId
     FROM #LogReferenceSource AS r
-    INNER JOIN #LogKey AS k  ON k.AuthorName = r.AuthorName AND k.Title = r.Title
-    INNER JOIN #LogKey AS rk ON rk.AuthorName = r.ReferencedAuthorName AND rk.Title = r.ReferencedTitle
+    INNER JOIN #LogKey AS k  ON k.AuthorName = r.AuthorName AND k.Stardate = r.Stardate AND k.Title = r.Title
+    INNER JOIN #LogKey AS rk ON rk.AuthorName = r.ReferencedAuthorName AND rk.Stardate = r.ReferencedStardate AND rk.Title = r.ReferencedTitle
 ) AS src
     ON tgt.LogId = src.LogId AND tgt.ReferencedLogId = src.ReferencedLogId
 WHEN NOT MATCHED BY TARGET
@@ -216,52 +216,53 @@ DROP TABLE IF EXISTS #LogTagSource;
 
 CREATE TABLE #LogTagSource
 (
-    AuthorName  NVARCHAR(100) NOT NULL,
-    Title       NVARCHAR(200) NOT NULL,
-    Tag         NVARCHAR(50)  NOT NULL,
-    PRIMARY KEY (AuthorName, Title, Tag)
+    AuthorName  NVARCHAR(100)  NOT NULL,
+    Stardate    DECIMAL(10, 2) NOT NULL,
+    Title       NVARCHAR(200)  NOT NULL,
+    Tag         NVARCHAR(50)   NOT NULL,
+    PRIMARY KEY (AuthorName, Stardate, Title, Tag)
 );
 
-INSERT INTO #LogTagSource (AuthorName, Title, Tag)
+INSERT INTO #LogTagSource (AuthorName, Stardate, Title, Tag)
 VALUES
-    (N'James T. Kirk',        N'Survey of an uncharted system',       N'survey'),
-    (N'Spock',                N'Anomalous readings from the survey',  N'survey'),
-    (N'Spock',                N'Anomalous readings from the survey',  N'anomaly'),
-    (N'Montgomery Scott',     N'Warp drive strain after survey',      N'warp-core'),
-    (N'Montgomery Scott',     N'Warp drive strain after survey',      N'survey'),
-    (N'Leonard McCoy',        N'Crew fatigue report',                 N'crew-health'),
-    (N'Leonard McCoy',        N'Crew fatigue report',                 N'survey'),
-    (N'Christopher Pike',     N'First weeks on a new mission',        N'survey'),
-    (N'Spock',                N'Calibrating the science labs',        N'sensors'),
-    (N'Jean-Luc Picard',      N'Diplomatic escort underway',          N'diplomacy'),
-    (N'Data',                 N'Sensor array recalibration',          N'sensors'),
-    (N'Data',                 N'Sensor array recalibration',          N'diplomacy'),
-    (N'Deanna Troi',          N'Crew stress after escort mission',    N'crew-health'),
-    (N'Deanna Troi',          N'Crew stress after escort mission',    N'diplomacy'),
-    (N'Worf',                 N'Boarding drill and access audit',     N'security'),
-    (N'Worf',                 N'Boarding drill and access audit',     N'diplomacy'),
-    (N'Benjamin Sisko',       N'Station defense readiness',           N'defense'),
-    (N'Julian Bashir',        N'Infirmary supply shortfall',          N'supplies'),
-    (N'Miles O''Brien',       N'Replicator and power grid repairs',   N'repairs'),
-    (N'Kathryn Janeway',      N'Course through uncharted space',      N'exploration'),
-    (N'B''Elanna Torres',     N'Power conservation measures',         N'power'),
-    (N'B''Elanna Torres',     N'Power conservation measures',         N'exploration'),
-    (N'The Doctor',           N'Emergency holographic program notes', N'crew-health'),
-    (N'Tuvok',                N'Defensive posture review',            N'defense'),
-    (N'Harry Kim',            N'Long-range sensor scheduling',        N'sensors'),
-    (N'Harry Kim',            N'Long-range sensor scheduling',        N'power');
+    (N'James T. Kirk', 2713.5, N'Survey of an uncharted system', N'survey'),
+    (N'Spock', 2713.6, N'Anomalous readings from the survey', N'survey'),
+    (N'Spock', 2713.6, N'Anomalous readings from the survey', N'anomaly'),
+    (N'Montgomery Scott', 2713.7, N'Warp drive strain after survey', N'warp-core'),
+    (N'Montgomery Scott', 2713.7, N'Warp drive strain after survey', N'survey'),
+    (N'Leonard McCoy', 2713.8, N'Crew fatigue report', N'crew-health'),
+    (N'Leonard McCoy', 2713.8, N'Crew fatigue report', N'survey'),
+    (N'Christopher Pike', 2259.4, N'First weeks on a new mission', N'survey'),
+    (N'Spock', 2259.6, N'Calibrating the science labs', N'sensors'),
+    (N'Jean-Luc Picard', 41153.7, N'Diplomatic escort underway', N'diplomacy'),
+    (N'Data', 41154.1, N'Sensor array recalibration', N'sensors'),
+    (N'Data', 41154.1, N'Sensor array recalibration', N'diplomacy'),
+    (N'Deanna Troi', 41154.5, N'Crew stress after escort mission', N'crew-health'),
+    (N'Deanna Troi', 41154.5, N'Crew stress after escort mission', N'diplomacy'),
+    (N'Worf', 41155.0, N'Boarding drill and access audit', N'security'),
+    (N'Worf', 41155.0, N'Boarding drill and access audit', N'diplomacy'),
+    (N'Benjamin Sisko', 46000.1, N'Station defense readiness', N'defense'),
+    (N'Julian Bashir', 46000.5, N'Infirmary supply shortfall', N'supplies'),
+    (N'Miles O''Brien', 46001.2, N'Replicator and power grid repairs', N'repairs'),
+    (N'Kathryn Janeway', 48315.6, N'Course through uncharted space', N'exploration'),
+    (N'B''Elanna Torres', 48316.0, N'Power conservation measures', N'power'),
+    (N'B''Elanna Torres', 48316.0, N'Power conservation measures', N'exploration'),
+    (N'The Doctor', 48316.4, N'Emergency holographic program notes', N'crew-health'),
+    (N'Tuvok', 48317.0, N'Defensive posture review', N'defense'),
+    (N'Harry Kim', 48317.5, N'Long-range sensor scheduling', N'sensors'),
+    (N'Harry Kim', 48317.5, N'Long-range sensor scheduling', N'power');
 
 IF EXISTS (
     SELECT 1
     FROM #LogTagSource AS t
-    WHERE NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = t.AuthorName AND k.Title = t.Title))
+    WHERE NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = t.AuthorName AND k.Stardate = t.Stardate AND k.Title = t.Title))
     THROW 50045, N'Seed.Logs: unknown log referenced in LogTag.', 1;
 
 MERGE dbo.LogTag AS tgt
 USING (
     SELECT k.LogId, t.Tag
     FROM #LogTagSource AS t
-    INNER JOIN #LogKey AS k ON k.AuthorName = t.AuthorName AND k.Title = t.Title
+    INNER JOIN #LogKey AS k ON k.AuthorName = t.AuthorName AND k.Stardate = t.Stardate AND k.Title = t.Title
 ) AS src
     ON tgt.LogId = src.LogId AND tgt.Tag = src.Tag
 WHEN NOT MATCHED BY TARGET
