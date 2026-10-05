@@ -59,6 +59,11 @@ erDiagram
     Vessel ||--o{ CharacterAssignment : crews
     Character ||--o{ CharacterAssignment : "posted to"
     Rank |o--o{ CharacterAssignment : "held"
+    LogType ||--o{ Log : classifies
+    Vessel ||--o{ Log : "written aboard"
+    Character ||--o{ Log : authors
+    Log ||--o{ LogReference : "refers to"
+    Log ||--o{ LogTag : "tagged with"
 
     Series {
         int SeriesId PK
@@ -136,6 +141,31 @@ erDiagram
         varchar Status
         nvarchar VesselKey UK
     }
+    LogType {
+        int LogTypeId PK
+        nvarchar Name UK
+        varchar Category
+        varchar DefaultClassification
+    }
+    Log {
+        int LogId PK
+        int LogTypeId FK
+        int VesselId FK
+        int AuthorCharacterId FK
+        decimal Stardate
+        datetime2 LoggedAt
+        nvarchar Title
+        nvarchar Content
+        varchar Classification
+    }
+    LogReference {
+        int LogId PK
+        int ReferencedLogId PK
+    }
+    LogTag {
+        int LogId PK
+        nvarchar Tag PK
+    }
     SeriesVessel {
         int SeriesId PK
         int VesselId PK
@@ -160,6 +190,13 @@ erDiagram
 - **`CharacterSpecies`** supports hybrids such as Spock, Troi and B'Elanna. A filtered unique index (`UX_CharacterSpecies_OnePrimary`) enforces one primary species per character.
 - **`CharacterAssignment`** records who served on which ship or station, in which series, in what position and at what rank.
 - **`Vessel.VesselKey`** is a persisted computed column (`ISNULL(Registry, Name)`). It gives every vessel a unique natural key, including those without a registry, such as Deep Space 9.
+- **Crew logs** (LogType, Log, LogReference, LogTag) reuse Vessel and Character, so a log is written by a character aboard a vessel at a stardate.
+  - LogType has a Category (Personal, Command, Department) and a DefaultClassification. Types: Personal, Captain's, Chief Engineer's, Medical / Chief Medical Officer's, Science Officer's, Tactical, Security, Counselor's, Operations.
+  - Log.Classification is Public, Classified, Confidential or Private (CK_Log_Classification). Personal logs are seeded as Confidential or Private, and the seed script throws if one isn't.
+  - LogReference links a log to another log about the same incident. A CHECK blocks self-references, and the composite primary key blocks duplicates. LogTag holds free-form tags, unique per log.
+  - **Privacy:** read logs through dbo.PublicLog, which returns only Public, non-personal logs. dbo.LogsVisibleTo(@ViewerCharacterId) is the my logs pattern: all public logs plus everything the viewer wrote. Querying dbo.[Log] directly bypasses both, so grant access to the view and function rather than the table.
+  - Stardates and log text are illustrative original paraphrases, not canon-exact.
+- **Schema changes** ship as a declarative model: SqlPackage diffs the .dacpac against the target on publish, so there are no migration scripts. Publishing adds the log tables and seed rows to an existing StarTrek database.
 - **Conventions:**
   - Constraints are named explicitly (`PK_`, `FK_`, `UQ_`, `CK_`, `DF_`, `IX_`, `UX_`).
   - Every FK column is indexed.
@@ -172,6 +209,8 @@ erDiagram
 StarTrek.Database.sqlproj
 global.json                           pins the minimum .NET SDK (10.0)
 dbo/Tables/*.sql                      one file per table, with its indexes
+dbo/Views/PublicLog.sql              non-private logs only
+dbo/Functions/LogsVisibleTo.sql      public logs plus the viewer's own
 Scripts/PostDeployment/
     Script.PostDeployment.sql         includes the seed files in dependency order
     Seed.Lookups.sql                  Series, Affiliation, Rank, VesselClass
@@ -181,6 +220,7 @@ Scripts/PostDeployment/
     Seed.Characters.sql               Character, CharacterSpecies
     Seed.Appearances.sql              ActorCharacter, SeriesAppearance
     Seed.Assignments.sql              CharacterAssignment
+    Seed.Logs.sql                     LogType, Log, LogReference, LogTag
 Scripts/Demo/DemoQueries.sql          demo queries: joins, recasts, window functions, PIVOT, ROLLUP...
 ```
 

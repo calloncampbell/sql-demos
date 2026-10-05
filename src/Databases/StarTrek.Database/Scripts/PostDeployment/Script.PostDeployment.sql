@@ -15,6 +15,7 @@ BEGIN TRANSACTION;
 :r .\Seed.Characters.sql
 :r .\Seed.Appearances.sql
 :r .\Seed.Assignments.sql
+:r .\Seed.Logs.sql
 
 COMMIT TRANSACTION;
 

@@ -237,3 +237,79 @@ FROM dbo.SeriesAppearance AS sa
 WHERE sa.SeriesId = (SELECT SeriesId FROM dbo.Series WHERE Abbreviation = 'DS9')
   AND sa.RoleType = 'Main';
 GO
+
+GO
+
+-------------------------------------------------------------------------------
+-- 15. Crew logs: public logs for a ship in stardate order (view hides
+--     Classified, Confidential and Private entries, and all personal logs)
+-------------------------------------------------------------------------------
+SELECT  Stardate, LogType, Author, Title
+FROM dbo.PublicLog
+WHERE Registry = 'NCC-74656'
+ORDER BY Stardate;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 16. "My logs": what Janeway can read (all public logs plus every log she wrote,
+--     including her private ones). Swap in another name to see the difference.
+-------------------------------------------------------------------------------
+DECLARE @ViewerCharacterId INT = (SELECT CharacterId FROM dbo.[Character] WHERE Name = N'Kathryn Janeway');
+
+SELECT Stardate, LogType, Author, Classification, Title
+FROM dbo.LogsVisibleTo(@ViewerCharacterId)
+ORDER BY Stardate;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 17. Logs about one incident: follow LogReference links (recursive CTE)
+--     from the Captain's log of the Voyager route through uncharted space
+-------------------------------------------------------------------------------
+WITH Related AS
+(
+    SELECT l.LogId, l.Title, CAST(0 AS INT) AS Depth
+    FROM dbo.[Log] AS l
+    WHERE l.Title = N'Course through uncharted space'
+
+    UNION ALL
+
+    SELECT l.LogId, l.Title, r.Depth + 1
+    FROM Related AS r
+    INNER JOIN dbo.LogReference AS lr ON lr.ReferencedLogId = r.LogId
+    INNER JOIN dbo.[Log]        AS l  ON l.LogId = lr.LogId
+)
+SELECT r.Depth, lt.Name AS LogType, c.Name AS Author, l.Stardate, r.Title, l.Classification
+FROM Related AS r
+INNER JOIN dbo.[Log]       AS l  ON l.LogId = r.LogId
+INNER JOIN dbo.LogType     AS lt ON lt.LogTypeId = l.LogTypeId
+INNER JOIN dbo.[Character] AS c  ON c.CharacterId = l.AuthorCharacterId
+ORDER BY r.Depth, l.Stardate;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 18. Logs by tag, and tag usage per log type category
+-------------------------------------------------------------------------------
+SELECT t.Tag, COUNT(*) AS LogCount, STRING_AGG(c.Name, N', ') WITHIN GROUP (ORDER BY c.Name) AS Authors
+FROM dbo.LogTag AS t
+INNER JOIN dbo.[Log]       AS l ON l.LogId = t.LogId
+INNER JOIN dbo.[Character] AS c ON c.CharacterId = l.AuthorCharacterId
+GROUP BY t.Tag
+ORDER BY LogCount DESC, t.Tag;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 19. Log volume by vessel and category (ROLLUP)
+-------------------------------------------------------------------------------
+SELECT  ISNULL(v.Name, N'(all vessels)')             AS Vessel,
+        ISNULL(lt.Category, N'(all categories)')     AS Category,
+        COUNT(*)                                     AS LogCount
+FROM dbo.[Log] AS l
+INNER JOIN dbo.LogType AS lt ON lt.LogTypeId = l.LogTypeId
+INNER JOIN dbo.Vessel  AS v  ON v.VesselId = l.VesselId
+GROUP BY ROLLUP (v.Name, lt.Category)
+ORDER BY GROUPING(v.Name), Vessel, GROUPING(lt.Category), Category;
+GO
