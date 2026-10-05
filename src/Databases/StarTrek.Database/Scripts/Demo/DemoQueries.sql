@@ -218,13 +218,15 @@ GO
 -------------------------------------------------------------------------------
 -- 13. Affiliation breakdown with ROLLUP
 -------------------------------------------------------------------------------
-SELECT  ISNULL(af.Name, N'(none)') AS Affiliation,
-        c.Gender,
+SELECT  CASE WHEN GROUPING(af.Name) = 1 THEN N'(all affiliations)'
+             ELSE ISNULL(af.Name, N'(none)') END AS Affiliation,
+        CASE WHEN GROUPING(c.Gender) = 1 THEN N'(all)'
+             ELSE CAST(c.Gender AS NVARCHAR(10)) END AS Gender,
         COUNT(*) AS CharacterCount
 FROM dbo.[Character] AS c
 LEFT JOIN dbo.Affiliation AS af ON af.AffiliationId = c.AffiliationId
 GROUP BY ROLLUP (af.Name, c.Gender)
-ORDER BY GROUPING(af.Name), Affiliation, GROUPING(c.Gender), c.Gender;
+ORDER BY GROUPING(af.Name), af.Name, GROUPING(c.Gender), c.Gender;
 
 GO
 

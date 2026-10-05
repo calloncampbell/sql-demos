@@ -9,7 +9,7 @@ CREATE TABLE dbo.Vessel
     LaunchYear     SMALLINT           NULL,
     [Status]       VARCHAR(15)        NOT NULL CONSTRAINT DF_Vessel_Status DEFAULT ('Active'),
     -- Natural key used by seed scripts: registry when known, otherwise the name.
-    VesselKey      AS (CAST(ISNULL(Registry, Name) AS NVARCHAR(100))) PERSISTED NOT NULL,
+    VesselKey      AS (ISNULL(CAST(Registry AS NVARCHAR(100)), Name)) PERSISTED NOT NULL,
     CreatedAt      DATETIME2(0)       NOT NULL CONSTRAINT DF_Vessel_CreatedAt DEFAULT (SYSUTCDATETIME()),
 
     CONSTRAINT PK_Vessel PRIMARY KEY CLUSTERED (VesselId),

@@ -42,7 +42,7 @@ IF EXISTS (SELECT 1 FROM #VesselSource AS s WHERE s.VesselClassName IS NOT NULL 
 MERGE dbo.Vessel AS tgt
 USING (
     SELECT s.Name, s.Registry, s.VesselType, vc.VesselClassId, a.AffiliationId, s.LaunchYear, s.[Status],
-           CAST(ISNULL(s.Registry, s.Name) AS NVARCHAR(100)) AS VesselKey
+           ISNULL(CAST(s.Registry AS NVARCHAR(100)), s.Name) AS VesselKey
     FROM #VesselSource AS s
     INNER JOIN dbo.Affiliation AS a ON a.Name = s.AffiliationName
     LEFT JOIN dbo.VesselClass AS vc ON vc.Name = s.VesselClassName
@@ -99,6 +99,16 @@ IF EXISTS (
     WHERE NOT EXISTS (SELECT 1 FROM dbo.Series AS se WHERE se.Abbreviation = s.SeriesAbbreviation)
        OR NOT EXISTS (SELECT 1 FROM dbo.Vessel AS v WHERE v.VesselKey = s.VesselKey))
     THROW 50004, N'Seed.Vessels: unknown series or vessel referenced in SeriesVessel.', 1;
+
+-- Clear primary flags that are about to move, so UX_SeriesVessel_OnePrimary is never violated mid-MERGE.
+UPDATE sv
+SET IsPrimary = 0
+FROM dbo.SeriesVessel AS sv
+INNER JOIN dbo.Series AS se ON se.SeriesId = sv.SeriesId
+INNER JOIN dbo.Vessel AS v ON v.VesselId = sv.VesselId
+WHERE sv.IsPrimary = 1
+  AND EXISTS (SELECT 1 FROM #SeriesVesselSource AS s
+              WHERE s.SeriesAbbreviation = se.Abbreviation AND s.IsPrimary = 1 AND s.VesselKey <> v.VesselKey);
 
 MERGE dbo.SeriesVessel AS tgt
 USING (

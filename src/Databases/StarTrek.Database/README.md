@@ -191,7 +191,7 @@ erDiagram
 - **`SeriesAppearance`** records an actor-as-character in a series as `Main`, `Recurring` or `Guest`, with a season range.
 - **`CharacterSpecies`** supports hybrids such as Spock, Troi and B'Elanna. A filtered unique index (`UX_CharacterSpecies_OnePrimary`) enforces one primary species per character.
 - **`CharacterAssignment`** records who served on which ship or station, in which series, in what position and at what rank.
-- **`Vessel.VesselKey`** is a persisted computed column (`ISNULL(Registry, Name)`). It gives every vessel a unique natural key, including those without a registry, such as Deep Space 9.
+- **`Vessel.VesselKey`** is a persisted computed column (`ISNULL(CAST(Registry AS NVARCHAR(100)), Name)`; the cast comes first so a long or Unicode name isn't truncated to the registry's `VARCHAR(20)`). It gives every vessel a unique natural key, including those without a registry, such as Deep Space 9.
 - **Crew logs** (LogType, Log, LogReference, LogTag) reuse Vessel and Character, so a log is written by a character aboard a vessel at a stardate. Log.SeriesId records which series the entry belongs to, because ships and characters span series (the Enterprise NCC-1701 and Spock appear in both TOS and SNW). Tags and references inherit their series from the log. The seed script checks that the author has a CharacterAssignment on that vessel in that series.
   - LogType has a Category (Personal, Command, Department) and a DefaultClassification. Types: Personal, Captain's, Chief Engineer's, Medical / Chief Medical Officer's, Science Officer's, Tactical, Security, Counselor's, Operations.
   - Log.Classification is Public, Classified, Confidential or Private (CK_Log_Classification). Personal logs are seeded as Confidential or Private, and the seed script throws if one isn't.
@@ -227,10 +227,10 @@ Scripts/PostDeployment/
 Scripts/Demo/DemoQueries.sql          demo queries: joins, recasts, window functions, PIVOT, ROLLUP...
 ```
 
-Each seed file:
+Each seed section:
 
-1. Loads its rows into a temp table.
-2. Validates every lookup, and `THROW`s with a clear message if a name doesn't resolve.
+1. Supplies its source rows either as an inline `VALUES` row constructor (lookups, planets, actors) or by loading a temp table first (everything that references other tables by name).
+2. Where the rows reference other tables by name, validates every lookup and `THROW`s with a clear message if a name doesn't resolve.
 3. `MERGE`s into the target on the natural key.
 
 Re-publishing is safe: changed rows are updated, new rows are inserted, and nothing is deleted.
@@ -245,7 +245,7 @@ Re-publishing is safe: changed rows are updated, new rows are inserted, and noth
 | [sqlcmd](https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-utility) | Any | Running the demo queries from the command line (optional) | `winget install sqlcmd` |
 | [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) | Any | Signing in for Azure SQL (`Active Directory Default`) (optional) | `winget install Microsoft.AzureCLI`, then `az login` |
 
-Optional editors: VS Code with the the **SQL Database Projects** extension, or Visual Studio 2022 17.12+ with SQL Server Data Tools, SDK-style.
+Optional editors: VS Code with the **SQL Database Projects** extension, or Visual Studio 2022 17.12+ with SQL Server Data Tools, SDK-style.
 
 Check what's installed:
 
