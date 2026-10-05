@@ -1,3 +1,4 @@
+-- NOTE: a query helper, not an access-control boundary. The caller supplies the viewer id, so\r\n-- do not grant it to principals who should not read other characters' logs; map the database\r\n-- principal to a CharacterId (or use row-level security) in a real application.
 -- "My logs" pattern: everything public, plus every log (of any classification) the viewer wrote.
 -- Other people's Classified, Confidential and Private logs are never returned.
 CREATE FUNCTION dbo.LogsVisibleTo (@ViewerCharacterId INT)

@@ -40,7 +40,9 @@ CREATE TABLE #LogSource
     Title           NVARCHAR(200)  NOT NULL,
     Content         NVARCHAR(MAX)  NOT NULL,
     Classification  VARCHAR(12)    NOT NULL,
-    PRIMARY KEY (AuthorName, Stardate, Title)
+    PRIMARY KEY (AuthorName, Stardate, Title),
+    -- Tags and references identify a log by author + title, so that pair must be unique in the seed.
+    UNIQUE (AuthorName, Title)
 );
 
 INSERT INTO #LogSource (AuthorName, VesselKey, SeriesAbbr, LogTypeName, Stardate, Title, Content, Classification)
@@ -154,6 +156,16 @@ WHEN NOT MATCHED BY TARGET
     THEN INSERT (LogTypeId, VesselId, SeriesId, AuthorCharacterId, Stardate, Title, Content, Classification)
          VALUES (src.LogTypeId, src.VesselId, src.SeriesId, src.AuthorCharacterId, src.Stardate, src.Title, src.Content, src.Classification);
 
+-- Resolve each seed log to its exact row (full natural key, including series and stardate).
+DROP TABLE IF EXISTS #LogKey;
+
+SELECT l.LogId, s.AuthorName, s.Title
+INTO #LogKey
+FROM #LogSource AS s
+INNER JOIN dbo.[Character] AS c  ON c.Name = s.AuthorName
+INNER JOIN dbo.Series      AS sr ON sr.Abbreviation = s.SeriesAbbr
+INNER JOIN dbo.[Log]       AS l  ON l.AuthorCharacterId = c.CharacterId AND l.SeriesId = sr.SeriesId AND l.Stardate = s.Stardate AND l.Title = s.Title;
+
 PRINT N'Seeding LogReference...';
 
 DROP TABLE IF EXISTS #LogReferenceSource;
@@ -183,18 +195,16 @@ VALUES
 IF EXISTS (
     SELECT 1
     FROM #LogReferenceSource AS r
-    WHERE NOT EXISTS (SELECT 1 FROM dbo.[Log] AS l INNER JOIN dbo.[Character] AS c ON c.CharacterId = l.AuthorCharacterId WHERE c.Name = r.AuthorName AND l.Title = r.Title)
-       OR NOT EXISTS (SELECT 1 FROM dbo.[Log] AS l INNER JOIN dbo.[Character] AS c ON c.CharacterId = l.AuthorCharacterId WHERE c.Name = r.ReferencedAuthorName AND l.Title = r.ReferencedTitle))
+    WHERE NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = r.AuthorName AND k.Title = r.Title)
+       OR NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = r.ReferencedAuthorName AND k.Title = r.ReferencedTitle))
     THROW 50044, N'Seed.Logs: unknown log referenced in LogReference.', 1;
 
 MERGE dbo.LogReference AS tgt
 USING (
-    SELECT l.LogId, rl.LogId AS ReferencedLogId
+    SELECT k.LogId, rk.LogId AS ReferencedLogId
     FROM #LogReferenceSource AS r
-    INNER JOIN dbo.[Character] AS c  ON c.Name = r.AuthorName
-    INNER JOIN dbo.[Log]       AS l  ON l.AuthorCharacterId = c.CharacterId AND l.Title = r.Title
-    INNER JOIN dbo.[Character] AS rc ON rc.Name = r.ReferencedAuthorName
-    INNER JOIN dbo.[Log]       AS rl ON rl.AuthorCharacterId = rc.CharacterId AND rl.Title = r.ReferencedTitle
+    INNER JOIN #LogKey AS k  ON k.AuthorName = r.AuthorName AND k.Title = r.Title
+    INNER JOIN #LogKey AS rk ON rk.AuthorName = r.ReferencedAuthorName AND rk.Title = r.ReferencedTitle
 ) AS src
     ON tgt.LogId = src.LogId AND tgt.ReferencedLogId = src.ReferencedLogId
 WHEN NOT MATCHED BY TARGET
@@ -244,15 +254,14 @@ VALUES
 IF EXISTS (
     SELECT 1
     FROM #LogTagSource AS t
-    WHERE NOT EXISTS (SELECT 1 FROM dbo.[Log] AS l INNER JOIN dbo.[Character] AS c ON c.CharacterId = l.AuthorCharacterId WHERE c.Name = t.AuthorName AND l.Title = t.Title))
+    WHERE NOT EXISTS (SELECT 1 FROM #LogKey AS k WHERE k.AuthorName = t.AuthorName AND k.Title = t.Title))
     THROW 50045, N'Seed.Logs: unknown log referenced in LogTag.', 1;
 
 MERGE dbo.LogTag AS tgt
 USING (
-    SELECT l.LogId, t.Tag
+    SELECT k.LogId, t.Tag
     FROM #LogTagSource AS t
-    INNER JOIN dbo.[Character] AS c ON c.Name = t.AuthorName
-    INNER JOIN dbo.[Log]       AS l ON l.AuthorCharacterId = c.CharacterId AND l.Title = t.Title
+    INNER JOIN #LogKey AS k ON k.AuthorName = t.AuthorName AND k.Title = t.Title
 ) AS src
     ON tgt.LogId = src.LogId AND tgt.Tag = src.Tag
 WHEN NOT MATCHED BY TARGET
@@ -260,4 +269,5 @@ WHEN NOT MATCHED BY TARGET
 
 DROP TABLE #LogTagSource;
 DROP TABLE #LogReferenceSource;
+DROP TABLE #LogKey;
 DROP TABLE #LogSource;
