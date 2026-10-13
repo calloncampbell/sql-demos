@@ -9,7 +9,7 @@ CREATE TABLE dbo.[Character]
 
     CONSTRAINT PK_Character PRIMARY KEY CLUSTERED (CharacterId),
     CONSTRAINT UQ_Character_Name UNIQUE (Name),
-    CONSTRAINT CK_Character_Gender CHECK (Gender IN ('Male', 'Female', 'Unknown')),
+    CONSTRAINT CK_Character_Gender CHECK (Gender IN ('Male', 'Female', 'Non-binary', 'Unknown')),
     CONSTRAINT FK_Character_Planet FOREIGN KEY (HomePlanetId) REFERENCES dbo.Planet (PlanetId),
     CONSTRAINT FK_Character_Affiliation FOREIGN KEY (AffiliationId) REFERENCES dbo.Affiliation (AffiliationId)
 );

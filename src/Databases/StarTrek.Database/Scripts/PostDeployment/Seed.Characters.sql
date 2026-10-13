@@ -1,6 +1,8 @@
 /*
     Seed.Characters.sql
     Characters plus their species (CharacterSpecies). Hybrids list a secondary species.
+    Kelvin-timeline versions share the Prime character row (the timeline lives on SeriesAppearance);
+    Mirror Universe counterparts are separate characters with a "(Mirror)" suffix.
 */
 PRINT N'Seeding Character...';
 
@@ -176,7 +178,99 @@ VALUES
     (N'Sam Kirk',               'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
     (N'Marie Batel',            'Female', NULL,               N'Starfleet',              N'Human',      NULL),
     (N'Jenna Mitchell',         'Female', NULL,               N'Starfleet',              N'Human',      NULL),
-    (N'Robert April',           'Male',   NULL,               N'Starfleet',              N'Human',      NULL);
+    (N'Robert April',           'Male',   NULL,               N'Starfleet',              N'Human',      NULL),
+    -- TOS-era films
+    (N'Ilia',                   'Female', NULL,               N'Starfleet',              N'Deltan',     NULL),
+    (N'Willard Decker',         'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Saavik',                 'Female', NULL,               N'Starfleet',              N'Vulcan',     NULL),
+    (N'Carol Marcus',           'Female', N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'David Marcus',           'Male',   N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Kruge',                  'Male',   N'Qo''noS',         N'Klingon Empire',         N'Klingon',    NULL),
+    (N'Gillian Taylor',         'Female', N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Sybok',                  'Male',   N'Vulcan',          N'Civilian',               N'Vulcan',     NULL),
+    (N'Valeris',                'Female', N'Vulcan',          N'Starfleet',              N'Vulcan',     NULL),
+    (N'Chang',                  'Male',   N'Qo''noS',         N'Klingon Empire',         N'Klingon',    NULL),
+    (N'Gorkon',                 'Male',   N'Qo''noS',         N'Klingon Empire',         N'Klingon',    NULL),
+    (N'Cartwright',             'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Colonel Worf',           'Male',   N'Qo''noS',         N'Klingon Empire',         N'Klingon',    NULL),
+    -- TNG-era films
+    (N'Tolian Soran',           'Male',   N'El-Auria',        N'Civilian',               N'El-Aurian',  NULL),
+    (N'John Harriman',          'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Lily Sloane',            'Female', N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Ru''afo',                'Male',   NULL,               NULL,                      N'Son''a',     NULL),
+    (N'Anij',                   'Female', N'Ba''ku',          N'Civilian',               N'Ba''ku',     NULL),
+    (N'Matthew Dougherty',      'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Shinzon',                'Male',   NULL,               N'Romulan Star Empire',    N'Human',      NULL),
+    (N'B-4',                    'Male',   NULL,               NULL,                      N'Android',    NULL),
+    (N'Donatra',                'Female', N'Romulus',         N'Romulan Star Empire',    N'Romulan',    NULL),
+    -- Kelvin timeline films (Kelvin versions of Prime characters share the Prime Character row)
+    (N'Nero',                   'Male',   N'Romulus',         NULL,                      N'Romulan',    NULL),
+    (N'George Kirk',            'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Winona Kirk',            'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Alexander Marcus',       'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Krall',                  'Male',   NULL,               NULL,                      N'Human',      NULL),
+    (N'Jaylah',                 'Female', NULL,               N'Civilian',               NULL,          NULL),
+    -- Discovery
+    (N'Michael Burnham',        'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Saru',                   'Male',   N'Kaminar',         N'Starfleet',              N'Kelpien',    NULL),
+    (N'Paul Stamets',           'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Sylvia Tilly',           'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Hugh Culber',            'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Philippa Georgiou',      'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Philippa Georgiou (Mirror)', 'Female', NULL,           N'Terran Empire',          N'Human',      NULL),
+    (N'Gabriel Lorca (Mirror)', 'Male',   NULL,               N'Terran Empire',          N'Human',      NULL),
+    (N'Ash Tyler',              'Male',   NULL,               N'Starfleet',              N'Klingon',    NULL),
+    (N'Cleveland Booker',       'Male',   N'Kwejian',         N'Civilian',               N'Kwejian',    NULL),
+    (N'Adira Tal',              'Non-binary', NULL,           N'Starfleet',              N'Human',      N'Trill'),
+    (N'Gray Tal',               'Male',   N'Trill',           N'Civilian',               N'Trill',      NULL),
+    (N'Rayner',                 'Male',   NULL,               N'Starfleet',              N'Kellerun',   NULL),
+    (N'Jett Reno',              'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Charles Vance',          'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'L''Rell',                'Female', N'Qo''noS',         N'Klingon Empire',         N'Klingon',    NULL),
+    (N'Keyla Detmer',           'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Joann Owosekun',         'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Airiam',                 'Female', NULL,               N'Starfleet',              N'Human',      NULL),
+    (N'Kovich',                 'Male',   NULL,               N'Starfleet',              NULL,          NULL),
+    (N'Zora',                   'Female', NULL,               N'Starfleet',              NULL,          NULL),
+    -- Picard
+    (N'Agnes Jurati',           'Female', N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Soji Asha',              'Female', NULL,               N'Civilian',               N'Android',    NULL),
+    (N'Dahj Asha',              'Female', NULL,               N'Civilian',               N'Android',    NULL),
+    (N'Kore Soong',             'Female', N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Raffi Musiker',          'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Cristóbal Rios',         'Male',   N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Elnor',                  'Male',   NULL,               N'Civilian',               N'Romulan',    NULL),
+    (N'Narek',                  'Male',   N'Romulus',         N'Romulan Star Empire',    N'Romulan',    NULL),
+    (N'Laris',                  'Female', N'Romulus',         N'Civilian',               N'Romulan',    NULL),
+    (N'Zhaban',                 'Male',   N'Romulus',         N'Civilian',               N'Romulan',    NULL),
+    (N'Narissa Rizzo',          'Female', N'Romulus',         N'Romulan Star Empire',    N'Romulan',    NULL),
+    (N'Oh',                     'Female', NULL,               N'Starfleet',              N'Romulan',    N'Vulcan'),
+    (N'Altan Inigo Soong',      'Male',   N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Adam Soong',             'Male',   N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Teresa Ramirez',         'Female', N'Earth',           N'Civilian',               N'Human',      NULL),
+    (N'Liam Shaw',              'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Jack Crusher',           'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Sidney La Forge',        'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Alandra La Forge',       'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Vadic',                  'Female', NULL,               NULL,                      N'Changeling', NULL),
+    -- Lower Decks
+    (N'Beckett Mariner',        'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Brad Boimler',           'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'D''Vana Tendi',          'Female', NULL,               N'Starfleet',              N'Orion',      NULL),
+    (N'Sam Rutherford',         'Male',   NULL,               N'Starfleet',              N'Human',      NULL),
+    (N'Carol Freeman',          'Female', N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Jack Ransom',            'Male',   N'Earth',           N'Starfleet',              N'Human',      NULL),
+    (N'Shaxs',                  'Male',   N'Bajor',           N'Starfleet',              N'Bajoran',    NULL),
+    (N'T''Ana',                 'Female', NULL,               N'Starfleet',              N'Caitian',    NULL),
+    (N'Andy Billups',           'Male',   NULL,               N'Starfleet',              NULL,          NULL),
+    -- Starfleet Academy (low confidence; details left NULL where unsure)
+    (N'Nahla Ake',              'Female', NULL,               N'Starfleet',              NULL,          NULL),
+    (N'Caleb Mir',              'Male',   NULL,               N'Starfleet',              NULL,          NULL),
+    (N'Jay-Den Kraag',          'Male',   NULL,               N'Starfleet',              N'Klingon',    NULL),
+    (N'Genesis Lythe',          'Female', NULL,               N'Starfleet',              NULL,          NULL),
+    (N'Darem Reymi',            'Male',   NULL,               N'Starfleet',              NULL,          NULL),
+    (N'Tarima Sadal',           'Female', NULL,               N'Starfleet',              N'Betazoid',   NULL),
+    (N'Nus Braka',              'Male',   NULL,               NULL,                      NULL,          NULL);
 
 IF EXISTS (SELECT 1 FROM #CharacterSource AS s WHERE s.HomePlanetName IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.Planet AS p WHERE p.Name = s.HomePlanetName))
     THROW 50010, N'Seed.Characters: unknown home planet referenced.', 1;
