@@ -24,7 +24,10 @@ USING (VALUES
     (N'Ktaris',          NULL,    NULL),
     (N'El-Auria',        NULL,    NULL),
     (N'Talax',           'Delta', 'M'),
-    (N'Ocampa',          'Delta', 'M')
+    (N'Ocampa',          'Delta', 'M'),
+    (N'Kaminar',         NULL,    NULL),
+    (N'Kwejian',         NULL,    NULL),
+    (N'Ba''ku',           NULL,    NULL)
 ) AS src (Name, Quadrant, PlanetClass)
     ON tgt.Name = src.Name
 WHEN MATCHED AND EXISTS (SELECT tgt.Quadrant, tgt.PlanetClass EXCEPT SELECT src.Quadrant, src.PlanetClass)
@@ -74,7 +77,15 @@ VALUES
     (N'Brunali',           NULL,               1),
     (N'Illyrian',          NULL,               1),
     (N'Lurian',            NULL,               1),
-    (N'Lanthanite',        NULL,               1);
+    (N'Lanthanite',        NULL,               1),
+    (N'Kelpien',           N'Kaminar',         1),
+    (N'Kwejian',           N'Kwejian',         1),
+    (N'Orion',             NULL,               1),
+    (N'Caitian',           NULL,               1),
+    (N'Son''a',             NULL,               1),
+    (N'Ba''ku',             N'Ba''ku',           1),
+    (N'Kellerun',          NULL,               1),
+    (N'Deltan',            NULL,               1);
 
 IF EXISTS (
     SELECT 1

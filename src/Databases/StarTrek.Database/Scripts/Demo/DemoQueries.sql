@@ -51,7 +51,7 @@ ORDER BY COUNT(*) DESC, Actor;
 GO
 
 -------------------------------------------------------------------------------
--- 4. Actors who appeared in the most series (any role)
+-- 4. Actors who appeared in the most TV series (any role; films excluded)
 -------------------------------------------------------------------------------
 WITH ActorSeries AS
 (
@@ -60,6 +60,7 @@ WITH ActorSeries AS
     INNER JOIN dbo.ActorCharacter   AS ac ON ac.ActorId = a.ActorId
     INNER JOIN dbo.SeriesAppearance AS sa ON sa.ActorCharacterId = ac.ActorCharacterId
     INNER JOIN dbo.Series           AS s  ON s.SeriesId = sa.SeriesId
+    WHERE s.ProductionType = 'Series'
 )
 SELECT TOP (10)
         FullName AS Actor,
@@ -117,6 +118,7 @@ GO
 
 -------------------------------------------------------------------------------
 -- 8. Window functions: rank actors within each series by length of tenure
+--    (films have no seasons, so only TV series are ranked)
 -------------------------------------------------------------------------------
 WITH Tenure AS
 (
@@ -130,6 +132,7 @@ WITH Tenure AS
     INNER JOIN dbo.ActorCharacter AS ac ON ac.ActorCharacterId = sa.ActorCharacterId
     INNER JOIN dbo.Actor          AS a  ON a.ActorId = ac.ActorId
     INNER JOIN dbo.[Character]    AS c  ON c.CharacterId = ac.CharacterId
+    WHERE s.ProductionType = 'Series'
 )
 SELECT  Abbreviation,
         FullName,
@@ -176,7 +179,7 @@ INNER JOIN dbo.Vessel      AS v ON v.VesselId = ca.VesselId
 INNER JOIN dbo.Series      AS s ON s.SeriesId = ca.SeriesId
 INNER JOIN dbo.[Character] AS c ON c.CharacterId = ca.CharacterId
 LEFT  JOIN dbo.[Rank]      AS r ON r.RankId = ca.RankId
-ORDER BY v.Name, v.Registry, s.PremiereDate, r.SortOrder DESC, c.Name;
+ORDER BY v.VesselKey, s.PremiereDate, r.SortOrder DESC, c.Name;
 
 GO
 
@@ -201,17 +204,18 @@ ORDER BY VesselCount DESC, [Character];
 GO
 
 -------------------------------------------------------------------------------
--- 12. PIVOT: count of cast rows by series and role type
+-- 12. PIVOT: count of cast rows by production and role type
+--     (series use Main/Recurring/Guest; films use Main/Supporting/Cameo)
 -------------------------------------------------------------------------------
-SELECT Series, [Main], [Recurring], [Guest]
+SELECT Series, ProductionType, [Main], [Recurring], [Guest], [Supporting], [Cameo]
 FROM
 (
-    SELECT s.Abbreviation AS Series, sa.RoleType
+    SELECT s.Abbreviation AS Series, s.ProductionType, s.PremiereDate, sa.RoleType
     FROM dbo.SeriesAppearance AS sa
     INNER JOIN dbo.Series AS s ON s.SeriesId = sa.SeriesId
 ) AS src
-PIVOT (COUNT(RoleType) FOR RoleType IN ([Main], [Recurring], [Guest])) AS pvt
-ORDER BY Series;
+PIVOT (COUNT(RoleType) FOR RoleType IN ([Main], [Recurring], [Guest], [Supporting], [Cameo])) AS pvt
+ORDER BY ProductionType DESC, PremiereDate;
 
 GO
 
@@ -340,4 +344,133 @@ INNER JOIN dbo.[Log]  AS l  ON l.LogId = t.LogId
 INNER JOIN dbo.Series AS sr ON sr.SeriesId = l.SeriesId
 GROUP BY sr.Abbreviation, t.Tag
 ORDER BY sr.Abbreviation, LogCount DESC, t.Tag;
+GO
+
+-------------------------------------------------------------------------------
+-- 22. Prime vs. Kelvin casting: the same character, a different actor per timeline
+--     (the timeline lives on the appearance, so Spock Prime in the Kelvin films stays Prime)
+-------------------------------------------------------------------------------
+WITH Casting AS
+(
+    SELECT c.Name AS [Character], t.Name AS Timeline, a.FullName AS Actor, s.PremiereDate
+    FROM dbo.SeriesAppearance AS sa
+    INNER JOIN dbo.Timeline       AS t  ON t.TimelineId = sa.TimelineId
+    INNER JOIN dbo.Series         AS s  ON s.SeriesId = sa.SeriesId
+    INNER JOIN dbo.ActorCharacter AS ac ON ac.ActorCharacterId = sa.ActorCharacterId
+    INNER JOIN dbo.Actor          AS a  ON a.ActorId = ac.ActorId
+    INNER JOIN dbo.[Character]    AS c  ON c.CharacterId = ac.CharacterId
+),
+Actors AS
+(
+    SELECT [Character], Timeline, Actor, MIN(PremiereDate) AS FirstSeen
+    FROM Casting
+    GROUP BY [Character], Timeline, Actor
+),
+PerTimeline AS
+(
+    SELECT [Character], Timeline,
+           STRING_AGG(Actor, N', ') WITHIN GROUP (ORDER BY FirstSeen) AS Actors
+    FROM Actors
+    GROUP BY [Character], Timeline
+)
+SELECT p.[Character], p.Actors AS PrimeActors, k.Actors AS KelvinActors
+FROM PerTimeline AS p
+INNER JOIN PerTimeline AS k ON k.[Character] = p.[Character] AND k.Timeline = N'Kelvin'
+WHERE p.Timeline = N'Prime'
+ORDER BY p.[Character];
+
+GO
+
+-------------------------------------------------------------------------------
+-- 23. Actors who span TV series and films
+-------------------------------------------------------------------------------
+WITH ActorProduction AS
+(
+    SELECT DISTINCT a.FullName, s.Abbreviation, s.ProductionType, s.PremiereDate
+    FROM dbo.SeriesAppearance AS sa
+    INNER JOIN dbo.Series         AS s  ON s.SeriesId = sa.SeriesId
+    INNER JOIN dbo.ActorCharacter AS ac ON ac.ActorCharacterId = sa.ActorCharacterId
+    INNER JOIN dbo.Actor          AS a  ON a.ActorId = ac.ActorId
+)
+SELECT  FullName AS Actor,
+        SUM(CASE WHEN ProductionType = 'Series' THEN 1 ELSE 0 END) AS SeriesCount,
+        SUM(CASE WHEN ProductionType = 'Film'   THEN 1 ELSE 0 END) AS FilmCount,
+        STRING_AGG(CAST(Abbreviation AS NVARCHAR(10)), N', ') WITHIN GROUP (ORDER BY PremiereDate) AS Productions
+FROM ActorProduction
+GROUP BY FullName
+HAVING COUNT(DISTINCT ProductionType) = 2
+ORDER BY COUNT(*) DESC, Actor;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 24. Voice vs. on-screen: actors who played the same character both ways
+--     (e.g. Lower Decks voice roles and live-action appearances)
+-------------------------------------------------------------------------------
+SELECT  a.FullName AS Actor,
+        c.Name     AS [Character],
+        STRING_AGG(CONCAT(CAST(s.Abbreviation AS NVARCHAR(10)), N' (', sa.PerformanceType, N')'), N', ')
+            WITHIN GROUP (ORDER BY s.PremiereDate) AS Appearances
+FROM dbo.SeriesAppearance AS sa
+INNER JOIN dbo.Series         AS s  ON s.SeriesId = sa.SeriesId
+INNER JOIN dbo.ActorCharacter AS ac ON ac.ActorCharacterId = sa.ActorCharacterId
+INNER JOIN dbo.Actor          AS a  ON a.ActorId = ac.ActorId
+INNER JOIN dbo.[Character]    AS c  ON c.CharacterId = ac.CharacterId
+GROUP BY a.FullName, c.Name
+HAVING COUNT(DISTINCT sa.PerformanceType) = 2
+ORDER BY Actor;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 25. Ship lineage (recursive CTE): the USS Titan-A was renamed Enterprise-G
+-------------------------------------------------------------------------------
+WITH Lineage AS
+(
+    SELECT v.VesselId, v.Name, v.Registry, v.[Status], v.RenamedFromVesselId, CAST(0 AS INT) AS Generation
+    FROM dbo.Vessel AS v
+    WHERE v.RenamedFromVesselId IS NULL
+      AND EXISTS (SELECT 1 FROM dbo.Vessel AS n WHERE n.RenamedFromVesselId = v.VesselId)
+
+    UNION ALL
+
+    SELECT v.VesselId, v.Name, v.Registry, v.[Status], v.RenamedFromVesselId, l.Generation + 1
+    FROM Lineage AS l
+    INNER JOIN dbo.Vessel AS v ON v.RenamedFromVesselId = l.VesselId
+)
+SELECT Generation, Name, Registry, [Status]
+FROM Lineage
+ORDER BY Generation;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 26. One registry, several ships: NCC-1701 across timelines (VesselKey is unique)
+-------------------------------------------------------------------------------
+SELECT  v.VesselKey, v.Name, v.Registry, t.Name AS Timeline, vc.Name AS Class, v.[Status],
+        STRING_AGG(CAST(s.Abbreviation AS NVARCHAR(10)), N', ') WITHIN GROUP (ORDER BY s.PremiereDate) AS Productions
+FROM dbo.Vessel AS v
+INNER JOIN dbo.Timeline     AS t  ON t.TimelineId = v.TimelineId
+LEFT  JOIN dbo.VesselClass  AS vc ON vc.VesselClassId = v.VesselClassId
+LEFT  JOIN dbo.SeriesVessel AS sv ON sv.VesselId = v.VesselId
+LEFT  JOIN dbo.Series       AS s  ON s.SeriesId = sv.SeriesId
+WHERE v.Registry LIKE 'NCC-1701%'
+GROUP BY v.VesselKey, v.Name, v.Registry, t.Name, vc.Name, v.[Status]
+ORDER BY t.Name DESC, v.Registry;
+
+GO
+
+-------------------------------------------------------------------------------
+-- 27. Productions by decade: series and films, live-action and animated, per timeline
+-------------------------------------------------------------------------------
+SELECT  YEAR(s.PremiereDate) / 10 * 10 AS Decade,
+        s.ProductionType,
+        s.[Format],
+        t.Name AS Timeline,
+        COUNT(*) AS Productions,
+        STRING_AGG(CAST(s.Abbreviation AS NVARCHAR(10)), N', ') WITHIN GROUP (ORDER BY s.PremiereDate) AS Titles
+FROM dbo.Series AS s
+INNER JOIN dbo.Timeline AS t ON t.TimelineId = s.TimelineId
+GROUP BY YEAR(s.PremiereDate) / 10 * 10, s.ProductionType, s.[Format], t.Name
+ORDER BY Decade, s.ProductionType DESC, s.[Format], Timeline;
 GO
